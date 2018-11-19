@@ -1,6 +1,7 @@
 from math import ceil
 from time import sleep
 from selenium import webdriver
+import selenium
 from xvfbwrapper import Xvfb
 
 
@@ -8,18 +9,18 @@ class Scraper(object):
     """ Scrape regulations.go comments
     """
 
-    def __init__(self, delay=4):
+    def __init__(self, delay=4, results_per_page=50):
         """
         """
         self.delay = delay
+        self.results_per_page = results_per_page
         self.driver = webdriver.Chrome()
         self.driver.set_window_size(1200, 800)
 
     def shut_down(self):
         self.driver.quit()
 
-    @staticmethod
-    def get_page(results_per_page=50, page_number=1):
+    def get_page(self, page_number=1):
         """
         rpp is the results per page (10, 25, 50)
         po is the page offset. If rpp=50, po=0 is 1st page, po=50 is the 2nd 
@@ -32,8 +33,8 @@ class Scraper(object):
         """
 
         url = "https://www.regulations.gov/docketBrowser"
-        url += "?rpp={0}&so=DESC&sb=postedDate".format(results_per_page)
-        url += "&po={0}&dct=PS".format((page_number - 1) * results_per_page)
+        url += "?rpp={0}&so=ASC&sb=postedDate".format(self.results_per_page)
+        url += "&po={0}&dct=PS".format((page_number - 1) * self.results_per_page)
         url += "&D=USCIS-2010-0012"
         return url
 
@@ -44,7 +45,7 @@ class Scraper(object):
         of comments from the bar at the bottom of the page.
         """
         # Get the url for the first page.
-        url = Scraper.get_page(page_number=1)
+        url = self.get_page(page_number=1)
 
         # Open browser.
         self.driver.get(url)
@@ -56,9 +57,12 @@ class Scraper(object):
                 '//*[contains(text(), "Displaying")]').text
             results_available = int(results_available.split()[-1])
         except:
-            results_available = self.driver.find_element_by_xpath(
-                '//div[@class="GIY1LSJILB GIY1LSJBL GIY1LSJIK GIY1LSJCL"]').text
-            results_available = int(results_available.split()[-1])
+            try:
+                results_available = self.driver.find_element_by_xpath(
+                    '//div[@class="GIY1LSJILB GIY1LSJBL GIY1LSJIK GIY1LSJCL"]').text
+                results_available = int(results_available.split()[-1])
+            except:
+                results_available = 0
 
         #total_pages = ceil(results_available / 50)
         return results_available
@@ -76,7 +80,7 @@ class Scraper(object):
             Each entry in the list corresponds to the url for a comment.
         """
         # Get url for given page.
-        url = Scraper.get_page(page_number=page_number)
+        url = self.get_page(page_number=page_number)
 
         # Open browser.
         self.driver.get(url)
@@ -101,16 +105,25 @@ class Scraper(object):
 
         RETURNS
         -------
-        results: dict
+        results: dict (or None on error)
             Name, comment, posted and received date, tracking number, and rin.
         """
         # Go to comment.
-        self.driver.get(comment_url)
-        sleep(self.delay)
+        try:
+            self.driver.get(comment_url)
+            sleep(self.delay)
+        except selenium.common.exceptions.TimeoutException:
+            return None
 
         # Get name.
-        name = self.driver.find_element_by_xpath(
-            '//*[contains(text(), "Comment Submitted by")]').text
+        try:
+            name = self.driver.find_element_by_xpath(
+                '//*[contains(text(), "Comment Submitted by")]').text
+        except selenium.common.exceptions.NoSuchElementException:
+            return None
+        name_prefix = "Comment Submitted by "
+        if name.startswith(name_prefix):
+            name = name[len(name_prefix):]
 
         # Check that text is not empty.
         try:
