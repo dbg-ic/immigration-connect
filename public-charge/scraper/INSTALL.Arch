@@ -1,0 +1,15 @@
+# Install for Arch linux
+# (An alternative to the Docker approach in README)
+
+git clone 'https://github.com/Data4Democracy/immigration-connect.git'
+cd immigration-connect/public-charge/scraper/
+
+sudo pacman -Sy --needed \
+	chromium \
+	xorg-server-xvfb \
+	python-pip
+
+pip install --user -r requirements.txt
+
+# Run the scraper
+python get_comments.py
