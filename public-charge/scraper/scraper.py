@@ -39,7 +39,7 @@ class Scraper(object):
         return url
 
     def get_comments_total(self):
-        """ Get the total number of comments
+        """ Get the total number of comments (or -1 on error)
 
         Go to the first page of the comments section and get the total number
         of comments from the bar at the bottom of the page.
@@ -48,6 +48,7 @@ class Scraper(object):
         url = self.get_page(page_number=1)
 
         # Open browser.
+        # print(url)
         self.driver.get(url)
         sleep(self.delay)
 
@@ -62,7 +63,7 @@ class Scraper(object):
                     '//div[@class="GIY1LSJILB GIY1LSJBL GIY1LSJIK GIY1LSJCL"]').text
                 results_available = int(results_available.split()[-1])
             except:
-                results_available = 0
+                results_available = -1
 
         #total_pages = ceil(results_available / 50)
         return results_available

@@ -53,15 +53,21 @@ if __name__ == "__main__":
 
     try:
         # Get the total number of comments.
-        total_comments = scraper.get_comments_total()
-        print("Total comments: {}".format(total_comments))
+        total_comments = -1
+        while total_comments == -1:
+            print("... Getting total ...")
+            total_comments = scraper.get_comments_total()
+
         total_pages = ceil(total_comments / results_per_page)
-        print("Total pages: {}".format(total_pages))
+        print("Total comments: {} ({} pages)".format(total_comments, total_pages))
 
         # Go through all pages.
         for page in range(page_start, total_pages + 1):
             # Get comment urls on given page.
-            urls = scraper.get_comments_urls_on_page(page)
+            urls = []
+            while len(urls) == 0:
+                print("... Getting URLS on page {} ...".format(page))
+                urls = scraper.get_comments_urls_on_page(page)
             print("Page {}: Urls: {}".format(page, len(urls)))
 
             for i, url in enumerate(urls):
